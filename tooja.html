@@ -1,0 +1,729 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>투자의 연습 | 가상 주식 투자</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Malgun Gothic", Arial, sans-serif;
+  background: #f3f6fb;
+  color: #1e293b;
+}
+header {
+  background: #172554;
+  color: white;
+  padding: 24px;
+  text-align: center;
+}
+.logo {
+  cursor: pointer;
+  user-select: none;
+}
+header p { color: #cbd5e1; }
+main {
+  max-width: 1050px;
+  margin: auto;
+  padding: 20px;
+}
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 18px #00000009;
+}
+h2 { font-size: 20px; margin-top: 0; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+.value {
+  font-size: 25px;
+  font-weight: bold;
+  margin-top: 12px;
+}
+.blue { color: #2563eb; }
+.red { color: #e11d48; }
+.green { color: #059669; }
+.muted { color: #64748b; font-size: 14px; }
+button, input, select {
+  font: inherit;
+  padding: 12px;
+  border-radius: 9px;
+}
+input, select {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  margin: 7px 0 15px;
+}
+button {
+  background: #2563eb;
+  color: white;
+  border: 0;
+  cursor: pointer;
+  font-weight: bold;
+}
+button:hover { filter: brightness(.92); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.secondary { background: #059669; }
+.danger { background: #e11d48; }
+.full { width: 100%; margin-top: 8px; }
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.stock {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 15px;
+  margin: 10px 0;
+}
+.stock strong { font-size: 17px; }
+.stock-price {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 8px 0;
+}
+.stock button { margin-right: 6px; }
+.record {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px 0;
+  font-size: 14px;
+}
+.message {
+  padding: 12px;
+  background: #eff6ff;
+  border-radius: 10px;
+  margin-top: 12px;
+}
+#chart {
+  width: 100%;
+  height: 220px;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #0f172ae8;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.overlay.show { display: flex; }
+.popup {
+  width: min(100%, 450px);
+  background: white;
+  padding: 25px;
+  border-radius: 20px;
+  text-align: center;
+  animation: pop .35s ease;
+}
+.popup img {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 15px;
+}
+.popup h2 { margin-top: 15px; }
+.popup button { margin-top: 15px; }
+@keyframes pop {
+  from { transform: scale(.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+footer {
+  text-align: center;
+  color: #64748b;
+  padding: 20px;
+  font-size: 13px;
+}
+@media(max-width: 700px) {
+  .grid, .two { grid-template-columns: 1fr; }
+  .value { font-size: 23px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1 class="logo" id="logo">📈 투자의 연습</h1>
+  <p>가상 주식으로 배우는 똑똑한 투자!</p>
+  <p>실제 돈이 사용되지 않는 교육용 서비스</p>
+</header>
+
+<main>
+  <div class="grid">
+    <section class="card">
+      <div class="muted">💰 보유 현금</div>
+      <div class="value blue" id="cash">0원</div>
+    </section>
+    <section class="card">
+      <div class="muted">📊 주식 평가금액</div>
+      <div class="value" id="stockValue">0원</div>
+    </section>
+    <section class="card">
+      <div class="muted">💎 총 자산</div>
+      <div class="value" id="totalAsset">0원</div>
+      <div id="profitRate" class="muted"></div>
+    </section>
+  </div>
+
+  <div class="two">
+    <section class="card">
+      <h2>📈 가상 주식 시장</h2>
+      <p class="muted">
+        거래일: <span id="day">1</span>일 차
+      </p>
+      <div id="stockList"></div>
+      <button class="full" id="nextDay">
+        ⏭ 다음 거래일로 이동
+      </button>
+      <p class="muted">
+        주가는 무작위로 변동하며 실제 시장과 무관합니다.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>🛒 주식 거래</h2>
+      <label for="stockSelect">종목 선택</label>
+      <select id="stockSelect"></select>
+
+      <label for="quantity">거래 수량</label>
+      <input type="number" id="quantity"
+        min="1" step="1" value="1">
+
+      <p id="tradeInfo"></p>
+
+      <button class="full" id="buyButton">
+        주식 매수
+      </button>
+      <button class="full secondary" id="sellButton">
+        주식 매도
+      </button>
+
+      <div class="message" id="tradeMessage"
+        role="status">
+        종목과 수량을 선택해 주세요.
+      </div>
+    </section>
+  </div>
+
+  <div class="two">
+    <section class="card">
+      <h2>📉 선택 종목 주가 그래프</h2>
+      <canvas id="chart"></canvas>
+      <p class="muted">
+        선택한 종목의 가상 주가 변화입니다.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>📦 나의 보유 주식</h2>
+      <div id="holdings"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>📋 거래 기록</h2>
+    <div id="history"></div>
+  </section>
+
+  <section class="card">
+    <h2>⚙️ 투자 초기화</h2>
+    <p class="muted">
+      모든 거래 기록을 삭제하고
+      가상 자산 100만 원부터 다시 시작합니다.
+    </p>
+    <button class="danger" id="resetButton">
+      처음부터 다시 시작
+    </button>
+  </section>
+</main>
+
+<!-- 네가 보내준 원본 캐릭터 사진 -->
+<div class="overlay" id="easterEgg">
+  <div class="popup">
+    <img src="character.png"
+      alt="사용자가 보내준 원본 캐릭터 사진">
+    <h2 id="eggTitle">비밀 캐릭터 등장!</h2>
+    <p id="eggMessage">
+      숨겨진 이스터 에그를 발견했어!
+    </p>
+    <button id="closeEgg">
+      다시 투자 연습하기
+    </button>
+  </div>
+</div>
+
+<footer>
+  투자의 연습 © 2026<br>
+  가상 투자 교육 프로젝트
+</footer>
+
+<script>
+"use strict";
+
+const INITIAL_CASH = 1000000;
+const STORAGE_KEY = "investment_practice_v3";
+
+const initialStocks = [
+  { id: 0, name: "미래전자", price: 70000 },
+  { id: 1, name: "그린에너지", price: 35000 },
+  { id: 2, name: "드림게임즈", price: 25000 },
+  { id: 3, name: "스마트로봇", price: 50000 }
+];
+
+const $ = id => document.getElementById(id);
+const won = n => Math.round(n).toLocaleString("ko-KR") + "원";
+
+function freshState() {
+  return {
+    cash: INITIAL_CASH,
+    day: 1,
+    stocks: initialStocks.map(s => ({
+      ...s,
+      prices: [s.price]
+    })),
+    holdings: [0, 0, 0, 0],
+    history: [],
+    celebrated: false,
+    comforted: false
+  };
+}
+
+let state;
+
+try {
+  state = JSON.parse(localStorage.getItem(STORAGE_KEY));
+  if (
+    !state ||
+    !Array.isArray(state.stocks) ||
+    state.stocks.length !== 4 ||
+    !Array.isArray(state.holdings) ||
+    state.holdings.length !== 4 ||
+    !Number.isFinite(state.cash)
+  ) {
+    state = freshState();
+  }
+} catch {
+  state = freshState();
+}
+
+function save() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    $("tradeMessage").textContent =
+      "브라우저 저장 기능을 사용할 수 없습니다.";
+  }
+}
+
+function getStockValue() {
+  return state.stocks.reduce((sum, s, i) =>
+    sum + s.price * state.holdings[i], 0);
+}
+
+function getTotalAsset() {
+  return state.cash + getStockValue();
+}
+
+function getProfit() {
+  return getTotalAsset() - INITIAL_CASH;
+}
+
+function getRate() {
+  return getProfit() / INITIAL_CASH * 100;
+}
+
+function renderSummary() {
+  $("cash").textContent = won(state.cash);
+  $("stockValue").textContent = won(getStockValue());
+  $("totalAsset").textContent = won(getTotalAsset());
+
+  const profit = getProfit();
+  const rate = getRate();
+
+  $("profitRate").textContent =
+    (profit >= 0 ? "+" : "") +
+    won(profit) + " (" + rate.toFixed(2) + "%)";
+
+  $("profitRate").className =
+    profit >= 0 ? "green" : "red";
+
+  $("day").textContent = state.day;
+}
+
+function renderStocks() {
+  const box = $("stockList");
+  box.replaceChildren();
+
+  state.stocks.forEach((s, i) => {
+    const previous = s.prices.length > 1
+      ? s.prices[s.prices.length - 2]
+      : s.price;
+
+    const diff = s.price - previous;
+    const rate = diff / previous * 100;
+
+    const div = document.createElement("div");
+    div.className = "stock";
+
+    const title = document.createElement("strong");
+    title.textContent = s.name;
+
+    const price = document.createElement("div");
+    price.className = "stock-price";
+    price.textContent = won(s.price);
+
+    const change = document.createElement("div");
+    change.className = diff >= 0 ? "red" : "blue";
+    change.textContent =
+      (diff >= 0 ? "+" : "") +
+      won(diff) + " (" + rate.toFixed(2) + "%)";
+
+    const button = document.createElement("button");
+    button.textContent = "이 종목 선택";
+    button.style.marginTop = "10px";
+    button.addEventListener("click", () => {
+      $("stockSelect").value = String(i);
+      updateTradeInfo();
+      drawChart();
+    });
+
+    div.append(title, price, change, button);
+    box.appendChild(div);
+  });
+}
+
+function renderSelect() {
+  const select = $("stockSelect");
+  const selected = select.value || "0";
+  select.replaceChildren();
+
+  state.stocks.forEach((s, i) => {
+    const option = document.createElement("option");
+    option.value = String(i);
+    option.textContent = s.name;
+    select.appendChild(option);
+  });
+
+  select.value = selected;
+}
+
+function updateTradeInfo() {
+  const i = Number($("stockSelect").value);
+  const quantity = Number($("quantity").value);
+  const s = state.stocks[i];
+
+  if (!s || !Number.isSafeInteger(quantity) || quantity < 1) {
+    $("tradeInfo").textContent =
+      "1주 이상의 올바른 수량을 입력해 주세요.";
+    return;
+  }
+
+  $("tradeInfo").textContent =
+    "현재 주가: " + won(s.price) +
+    " | 거래 금액: " + won(s.price * quantity) +
+    " | 보유: " + state.holdings[i] + "주";
+}
+
+function renderHoldings() {
+  const box = $("holdings");
+  box.replaceChildren();
+
+  let count = 0;
+
+  state.stocks.forEach((s, i) => {
+    const qty = state.holdings[i];
+    if (qty <= 0) return;
+
+    count++;
+
+    const div = document.createElement("div");
+    div.className = "record";
+    div.textContent =
+      s.name + " | " + qty + "주 | " +
+      won(qty * s.price);
+    box.appendChild(div);
+  });
+
+  if (!count) {
+    box.textContent = "아직 보유한 주식이 없어요.";
+  }
+}
+
+function renderHistory() {
+  const box = $("history");
+  box.replaceChildren();
+
+  if (!state.history.length) {
+    box.textContent = "아직 거래 기록이 없어요.";
+    return;
+  }
+
+  state.history.slice().reverse().forEach(h => {
+    const div = document.createElement("div");
+    div.className = "record";
+    div.textContent =
+      h.day + "일 차 | " + h.type + " | " +
+      h.name + " " + h.quantity + "주 | " +
+      won(h.amount);
+    box.appendChild(div);
+  });
+}
+
+function render() {
+  renderSummary();
+  renderStocks();
+  renderSelect();
+  updateTradeInfo();
+  renderHoldings();
+  renderHistory();
+  drawChart();
+}
+
+function trade(type) {
+  const i = Number($("stockSelect").value);
+  const quantity = Number($("quantity").value);
+  const stock = state.stocks[i];
+
+  if (!stock ||
+      !Number.isSafeInteger(quantity) ||
+      quantity < 1 ||
+      quantity > 1000000) {
+    $("tradeMessage").textContent =
+      "1주 이상 100만 주 이하로 입력해 주세요.";
+    return;
+  }
+
+  const amount = stock.price * quantity;
+
+  if (!Number.isSafeInteger(amount)) {
+    $("tradeMessage").textContent =
+      "거래 금액이 너무 큽니다.";
+    return;
+  }
+
+  if (type === "매수") {
+    if (amount > state.cash) {
+      $("tradeMessage").textContent =
+        "현금이 부족해서 매수할 수 없어요.";
+      return;
+    }
+    state.cash -= amount;
+    state.holdings[i] += quantity;
+  } else {
+    if (quantity > state.holdings[i]) {
+      $("tradeMessage").textContent =
+        "보유 주식이 부족해서 매도할 수 없어요.";
+      return;
+    }
+    state.cash += amount;
+    state.holdings[i] -= quantity;
+  }
+
+  state.history.push({
+    day: state.day,
+    type,
+    name: stock.name,
+    quantity,
+    amount
+  });
+
+  $("tradeMessage").textContent =
+    "✅ " + stock.name + " " +
+    quantity + "주 " + type + " 완료!";
+
+  save();
+  render();
+  checkCharacter();
+}
+
+function nextDay() {
+  state.day++;
+
+  state.stocks.forEach(s => {
+    // 하루 -8% ~ +8% 가상 변동
+    const change = Math.random() * 0.16 - 0.08;
+
+    s.price = Math.max(
+      100,
+      Math.round(s.price * (1 + change) / 100) * 100
+    );
+
+    s.prices.push(s.price);
+  });
+
+  save();
+  render();
+  checkCharacter();
+}
+
+function drawChart() {
+  const canvas = $("chart");
+  const ctx = canvas.getContext("2d");
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+
+  if (!width || !height) return;
+
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const i = Number($("stockSelect").value);
+  const prices = state.stocks[i].prices;
+
+  const min = Math.min(...prices) * 0.95;
+  const max = Math.max(...prices) * 1.05;
+  const range = Math.max(1, max - min);
+
+  const left = 18;
+  const right = width - 18;
+  const top = 25;
+  const bottom = height - 25;
+
+  ctx.strokeStyle = "#e2e8f0";
+  ctx.lineWidth = 1;
+
+  for (let j = 0; j < 5; j++) {
+    const y = top + (bottom - top) * j / 4;
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  ctx.strokeStyle = "#2563eb";
+  ctx.lineWidth = 3;
+
+  prices.forEach((price, j) => {
+    const x = prices.length === 1
+      ? (left + right) / 2
+      : left + (right - left) * j / (prices.length - 1);
+
+    const y = bottom -
+      (price - min) / range * (bottom - top);
+
+    if (j === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+
+  ctx.stroke();
+
+  ctx.fillStyle = "#2563eb";
+  const last = prices[prices.length - 1];
+  const y = bottom - (last - min) / range * (bottom - top);
+
+  ctx.beginPath();
+  ctx.arc(right, y, 4, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function showCharacter(title, message) {
+  $("eggTitle").textContent = title;
+  $("eggMessage").textContent = message;
+  $("easterEgg").classList.add("show");
+}
+
+function closeCharacter() {
+  $("easterEgg").classList.remove("show");
+}
+
+function checkCharacter() {
+  const profit = getProfit();
+
+  // 수익 3만 원 이상
+  if (profit >= 30000 && !state.celebrated) {
+    state.celebrated = true;
+    save();
+
+    showCharacter(
+      "🎉 투자 성공!",
+      "우와! 가상 투자 수익이 " +
+      won(profit) + "이야! 축하해!"
+    );
+  }
+
+  // 손실 3만 원 이상
+  if (profit <= -30000 && !state.comforted) {
+    state.comforted = true;
+    save();
+
+    showCharacter(
+      "🥺 괜찮아!",
+      "현재 가상 투자 손실은 " +
+      won(Math.abs(profit)) +
+      "이야. 투자에는 위험이 있다는 걸 배워보자!"
+    );
+  }
+}
+
+// 숨겨진 이스터 에그
+let clickCount = 0;
+let lastClick = 0;
+
+$("logo").addEventListener("click", () => {
+  const now = Date.now();
+
+  if (now - lastClick > 1500) {
+    clickCount = 0;
+  }
+
+  lastClick = now;
+  clickCount++;
+
+  if (clickCount >= 5) {
+    clickCount = 0;
+
+    showCharacter(
+      "🥚 비밀 이스터 에그 발견!",
+      "ㅋㅋㅋ 숨겨진 캐릭터를 찾아냈네! 🐮"
+    );
+  }
+});
+
+$("closeEgg").addEventListener("click", closeCharacter);
+
+$("easterEgg").addEventListener("click", e => {
+  if (e.target === $("easterEgg")) closeCharacter();
+});
+
+$("buyButton").addEventListener("click", () => trade("매수"));
+$("sellButton").addEventListener("click", () => trade("매도"));
+$("nextDay").addEventListener("click", nextDay);
+
+$("stockSelect").addEventListener("change", () => {
+  updateTradeInfo();
+  drawChart();
+});
+
+$("quantity").addEventListener("input", updateTradeInfo);
+
+$("resetButton").addEventListener("click", () => {
+  if (!confirm("모든 투자 기록을 초기화할까요?")) return;
+
+  state = freshState();
+  save();
+  $("tradeMessage").textContent =
+    "가상 자산 100만 원으로 초기화했어요.";
+  render();
+});
+
+window.addEventListener("resize", drawChart);
+
+render();
+</script>
+</body>
+</html>
